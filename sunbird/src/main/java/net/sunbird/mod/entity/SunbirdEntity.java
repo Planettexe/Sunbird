@@ -3,6 +3,7 @@ package net.sunbird.mod.entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
@@ -56,9 +57,9 @@ public class SunbirdEntity extends PathAwareEntity {
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return MobEntity.createMobAttributes()
-                .add(EntityAttributes.MAX_HEALTH, 10.0)
-                .add(EntityAttributes.MOVEMENT_SPEED, 0.30)
-                .add(EntityAttributes.FLYING_SPEED, 0.45);
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 10.0)
+                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.30)
+                .add(EntityAttributes.GENERIC_FLYING_SPEED, 0.45);
     }
 
     public static SpawnGroup spawnGroup() {
@@ -85,8 +86,9 @@ public class SunbirdEntity extends PathAwareEntity {
 
     @Override
     public EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty,
-                                 SpawnReason spawnReason, EntityData entityData) {
-        EntityData d = super.initialize(world, difficulty, spawnReason, entityData);
+                                 SpawnReason spawnReason, EntityData entityData,
+                                 net.minecraft.nbt.NbtCompound nbt) {
+        EntityData d = super.initialize(world, difficulty, spawnReason, entityData, nbt);
         // A brand-new bird inherits the shared soul-state: if the flock has seen things,
         // this one starts... uneasy. Very Verity: there is only ever ONE sunbird mind.
         var m = HauntDirector.mood();
@@ -102,8 +104,8 @@ public class SunbirdEntity extends PathAwareEntity {
         this.goalSelector.add(1, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
         this.goalSelector.add(2, new WanderAroundFarGoal(this, 0.6));
         // If someone hurt it recently, it keeps its distance from players for a while.
-        this.goalSelector.add(0, new FleeEntityGoal<>(this, PlayerEntity.class,
-                p -> HauntDirector.shouldFleeFrom(p), 6.0f, 1.1, 1.3));
+        this.goalSelector.add(0, new FleeEntityGoal<PlayerEntity>(this, PlayerEntity.class,
+                p -> HauntDirector.shouldFleeFrom(p), 6.0f, 1.1, 1.3, t -> true));
     }
 
     /** It's a ball - it bobs instead of walking awkwardly, and hums now and then. */

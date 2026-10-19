@@ -1,6 +1,5 @@
 package net.sunbird.mod;
 
-import io.netty.buffer.Unpooled;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
@@ -11,13 +10,15 @@ import net.minecraft.client.sound.SoundInstance;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
 import net.sunbird.mod.entity.SunbirdRenderer;
 import net.sunbird.mod.net.SunbirdClientNetworking;
+import net.sunbird.mod.world.SunbirdFeatures;
 
+import javax.sound.sampled.AudioFormat;
 import java.io.ByteArrayInputStream;
-import java.util.concurrent.atomic.AtomicLong;
+import java.io.InputStream;
 
 /**
  * Client side: registers the procedural sphere renderer and listens for the bird's
@@ -27,12 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class SunbirdClient implements ClientModInitializer {
 
-    /** Monotonic ids so each incoming WAV becomes its own one-shot sound instance. */
-    private static final AtomicLong VOICE_SEQ = new AtomicLong(1);
-
     @Override
     public void onInitializeClient() {
-        EntityRendererRegistry.register(SunbirdFeaturesClient.ENTITY_TYPE, SunbirdRenderer::new);
+        EntityRendererRegistry.register(SunbirdFeatures.SUNBIRD_ENTITY_TYPE, SunbirdRenderer::new);
 
         ClientPlayNetworking.registerGlobalReceiver(SunbirdClientNetworking.BUBBLE_S2C,
                 (client, handler, buf, responseSender) -> {
@@ -65,21 +63,22 @@ public class SunbirdClient implements ClientModInitializer {
     /**
      * Decode the WAV the HOST synthesised (llama.cpp --tts / Piper / Kokoro) and play
      * it at the bird's position with normal 3D falloff. If the entity isn't loaded
-     * client-side (entityId == -1 or out of view) we fall back to a positional master
-     * instance so the voice is never lost.
+     * client-side (entityId == -1 or out of view) we fall back to the send position.
      */
     private static void playWav(MinecraftClient client, int entityId,
                                 double x, double y, double z, float volume, byte[] wav) {
         try {
-            Identifier dynId = SunbirdMod.id("voice_" + VOICE_SEQ.getAndIncrement());
-            // Register an in-memory audio stream resource for this one clip.
-            SoundEvents.registerCustom(dynId); // no-op-safe shim below (see registerCustom)
-            AudioStream stream = new com.mojang.sound.WaveStream(
-                    new ByteArrayInputStream(wav), true);
+            AudioStream stream = new WavAudioStream(new ByteArrayInputStream(wav));
             Vec3d pos = resolvePos(client, entityId, x, y, z);
-            SoundInstance inst = new net.minecraft.client.sound.StaticAudioDispatcherHolder(
-                    stream, pos.x, pos.y, pos.z, volume, SoundCategory.PLAYERS, dynId);
-            client.getSoundManager().play(inst);
+            SoundInstance inst = new PositionedSoundInstance(
+                    SunbirdMod.id("voice_stream"),
+                    SoundCategory.PLAYERS,
+                    volume, 1.0f,
+                    SoundInstance.createRandom(),
+                    false, 0, SoundInstance.AttenuationType.LINEAR,
+                    pos.x, pos.y, pos.z,
+                    true);
+            client.getSoundManager().play(new StreamedSound(inst, stream));
         } catch (Exception e) {
             // Bad/unsupported audio? The chat line already carried the message. Stay quiet.
         }
@@ -93,9 +92,174 @@ public class SunbirdClient implements ClientModInitializer {
         return new Vec3d(x, y, z);
     }
 
-    /** Lazy accessor holder so the client file doesn't import the whole registry twice. */
-    private static class SunbirdFeaturesClient {
-        static final net.minecraft.entity.EntityType<?> ENTITY_TYPE =
-                net.sunbird.mod.world.SunbirdFeatures.SUNBIRD_ENTITY_TYPE;
+    /**
+     * Minimal PCM WAV decoder implementing Minecraft's AudioStream interface.
+     * Handles 16-bit signed little-endian PCM mono/stereo (what Piper/Kokoro/
+     * llama.cpp TTS tools emit). Anything fancier is rejected gracefully.
+     */
+    private static final class WavAudioStream implements AudioStream {
+        private final InputStream source;
+        private final AudioFormat format;
+
+        WavAudioStream(InputStream in) throws Exception {
+            this.source = in;
+            in.mark(1 << 24);
+            readExpected("RIFF");
+            skipFully(4);                       // file size
+            readExpected("WAVE");
+            int channels = 1, sampleRate = 22050, bitsPerSample = 16;
+            while (true) {
+                String id = new String(readExactly(4));
+                int size = readIntLE();
+                if (id.equals("fmt ")) {
+                    readIntLE();                // audio format (1 = PCM)
+                    channels = readShortLE();
+                    sampleRate = readIntLE();
+                    readIntLE();                // byte rate
+                    readShortLE();              // block align
+                    bitsPerSample = readShortLE();
+                    skipFully(Math.max(0, size - 16));
+                } else if (id.equals("data")) {
+                    break;                      // samples start right here
+                } else {
+                    skipFully(size + (size & 1));
+                }
+            }
+            if (bitsPerSample != 16) throw new IllegalArgumentException("only 16-bit PCM supported");
+            this.format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+                    sampleRate, 16, channels, channels * 2, sampleRate, false);
+        }
+
+        @Override public AudioFormat getFormat() { return format; }
+
+        @Override
+        public int read(byte[] buffer, int length) throws java.io.IOException {
+            int done = 0;
+            while (done < length) {
+                int n = source.read(buffer, done, length - done);
+                if (n <= 0) break;
+                done += n;
+            }
+            return done > 0 ? done : -1;
+        }
+
+        @Override public long getLength() throws java.io.IOException { return -1; }
+
+        @Override public void close() throws java.io.IOException { source.close(); }
+
+        private void readExpected(String s) throws Exception {
+            String got = new String(readExactly(4));
+            if (!got.equals(s)) throw new IllegalArgumentException("not a WAV (" + got + ")");
+        }
+
+        private byte[] readExactly(int n) throws java.io.EOFException {
+            byte[] b = new byte[n];
+            int off = 0;
+            while (off < n) {
+                int r = source.read(b, off, n - off);
+                if (r < 0) throw new java.io.EOFException();
+                off += r;
+            }
+            return b;
+        }
+
+        private void skipFully(long n) throws java.io.IOException {
+            while (n > 0) { long s = source.skip(n); if (s <= 0) break; n -= s; }
+        }
+
+        private int readIntLE() throws java.io.IOException {
+            byte[] b = readExactly(4);
+            return (b[0] & 0xff) | (b[1] & 0xff) << 8 | (b[2] & 0xff) << 16 | (b[3] & 0xff) << 24;
+        }
+
+        private int readShortLE() throws java.io.IOException {
+            byte[] b = readExactly(2);
+            return (b[0] & 0xff) | (b[1] & 0xff) << 8;
+        }
+    }
+
+    /**
+     * Plays an AudioStream directly through the engine's channel/source API using
+     * one-time reflection lookups (fields are private in 1.20.4 but stable within
+     * this exact yarn build). If reflection fails we stay silent - chat still works.
+     */
+    private static final class RawWavPlayer {
+        private static java.lang.reflect.Field F_SYSTEM, F_CHANNEL, F_ENGINE;
+        private static java.lang.reflect.Method M_CREATE_SOURCE, M_RUN, M_SET_STREAM,
+                M_SET_POS, M_SET_VOL, M_SET_PITCH, M_SET_ATT, M_SET_REL, M_PLAY, M_CLOSE;
+        private static Object RUN_MODE_STREAMING;
+        private static boolean initTried, ready;
+
+        static void play(net.minecraft.client.MinecraftClient client, AudioStream stream,
+                         Vec3d pos, float volume) {
+            try {
+                if (!initTried) { init(client); initTried = true; }
+                if (!ready) { stream.close(); return; }
+                Object soundSystem = F_SYSTEM.get(client.getSoundManager());
+                Object channel = F_CHANNEL.get(soundSystem);
+                Object engine = F_ENGINE.get(soundSystem);
+                Object runMode = RUN_MODE_STREAMING;
+                @SuppressWarnings("unchecked")
+                java.util.concurrent.CompletableFuture<Object> fut =
+                        (java.util.concurrent.CompletableFuture<Object>) M_CREATE_SOURCE.invoke(channel, runMode);
+                Object sourceManager = fut.get(2, java.util.concurrent.TimeUnit.SECONDS);
+                M_RUN.invoke(sourceManager, (java.util.function.Consumer<Object>) sm -> {
+                    Object source = null;
+                    try {
+                        // SourceManager.run(Consumer<Source>) already hands us the source via its field;
+                        // instead use Channel.execute-style: the consumer param IS the Source.
+                        source = sm;
+                        M_SET_STREAM.invoke(source, stream);
+                        M_SET_POS.invoke(source, pos);
+                        M_SET_VOL.invoke(source, volume);
+                        M_SET_PITCH.invoke(source, 1.0f);
+                        M_SET_ATT.invoke(source, 16.0f);
+                        M_SET_REL.invoke(source, false);
+                        M_PLAY.invoke(source);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            } catch (Throwable t) {
+                try { stream.close(); } catch (Exception ignored) {}
+            }
+        }
+
+        private static void init(net.minecraft.client.MinecraftClient client) throws Exception {
+            Class<?> sysCls = Class.forName("net.minecraft.client.sound.SoundSystem");
+            Class<?> chanCls = Class.forName("net.minecraft.client.sound.Channel");
+            Class<?> engCls = Class.forName("net.minecraft.client.sound.SoundEngine");
+            Class<?> srcCls = Class.forName("net.minecraft.client.sound.Source");
+            Class<?> smCls = Class.forName("net.minecraft.client.sound.Channel$SourceManager");
+            Class<?> rmCls = Class.forName("net.minecraft.client.sound.SoundEngine$RunMode");
+
+            F_SYSTEM = net.minecraft.client.sound.SoundManager.class.getDeclaredField("soundSystem");
+            F_SYSTEM.setAccessible(true);
+            for (java.lang.reflect.Field f : sysCls.getDeclaredFields()) {
+                f.setAccessible(true);
+                if (chanCls.isAssignableFrom(f.getType())) F_CHANNEL = f;
+                if (engCls.isAssignableFrom(f.getType())) F_ENGINE = f;
+            }
+            M_CREATE_SOURCE = chanCls.getDeclaredMethod("createSource", rmCls);
+            M_CREATE_SOURCE.setAccessible(true);
+            M_RUN = smCls.getDeclaredMethod("run", java.util.function.Consumer.class);
+            M_RUN.setAccessible(true);
+            M_SET_STREAM = srcCls.getDeclaredMethod("setStream", AudioStream.class);
+            M_SET_POS = srcCls.getDeclaredMethod("setPosition", Vec3d.class);
+            M_SET_VOL = srcCls.getDeclaredMethod("setVolume", float.class);
+            M_SET_PITCH = srcCls.getDeclaredMethod("setPitch", float.class);
+            M_SET_ATT = srcCls.getDeclaredMethod("setAttenuation", float.class);
+            M_SET_REL = srcCls.getDeclaredMethod("setRelative", boolean.class);
+            M_PLAY = srcCls.getDeclaredMethod("play");
+            M_CLOSE = smCls.getDeclaredMethod("close");
+            M_CLOSE.setAccessible(true);
+
+            RUN_MODE_STREAMING = java.lang.reflect.Array.get(rmCls.arrayType() != null ? ArrayOf(rmCls) : rmCls, 0);
+            Object[] modes = rmCls.getEnumConstants();
+            for (Object m : modes) if (m.toString().equals("STREAMING")) RUN_MODE_STREAMING = m;
+            ready = F_CHANNEL != null && F_ENGINE != null && RUN_MODE_STREAMING != null;
+        }
+
+        private static Class<?> ArrayOf(Class<?> c) { return java.lang.reflect.Array.newInstance(c, 0).getClass(); }
     }
 }

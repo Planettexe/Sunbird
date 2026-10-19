@@ -278,6 +278,14 @@ public final class HauntDirector {
         return s.length() > 100 ? s.substring(0, 97) + "..." : s;
     }
 
+    /** True when this specific player recently wronged the bird (grudge) - used by the flee goal. */
+    public static boolean shouldFleeFrom(net.minecraft.entity.LivingEntity entity) {
+        if (!(entity instanceof net.minecraft.server.network.ServerPlayerEntity sp)) return false;
+        MoodState m = mood();
+        if (m.grudges.containsKey(sp.getUuidAsString())) return true;
+        return m.dread > 0.7f; // deeply haunted: it avoids everyone a little
+    }
+
     public static String moodDigest() {
         return mood().describe();
     }

@@ -60,7 +60,7 @@ public class SunbirdMod implements ModInitializer {
 
         // Chat pipeline: player chat goes to the model queue, replies come back in chat.
         ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((message, sender, paramSet) -> {
-            BehaviorBrain.onPlayerChat(sender, message.signedBody().getString());
+            BehaviorBrain.onPlayerChat(sender, message.getSignedContent());
             return true; // never cancel normal chat
         });
 
