@@ -4,7 +4,6 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
@@ -73,15 +72,7 @@ public class SunbirdMod implements ModInitializer {
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
                 BehaviorBrain.onRespawn(newPlayer));
 
-        // Right-click a sunbird => private conversation channel with the shared brain
-        UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            if (!world.isClient && entity instanceof SunbirdEntity bird
-                    && player instanceof net.minecraft.server.network.ServerPlayerEntity sp) {
-                bird.openTalkChannel(sp);
-                return UseEntityCallback.Result.CONSUME;
-            }
-            return UseEntityCallback.Result.PASS;
-        });
+        // (Right-click handling lives in SunbirdEntity#interactMob - no callback needed.)
 
         // Lifecycle: load memory, start brain & perception off the tick loop
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {

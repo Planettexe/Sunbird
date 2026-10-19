@@ -1,123 +1,102 @@
 package net.sunbird.mod.entity;
 
+import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.EntityRendererFactory;
-import net.minecraft.client.render.entity.MobEntityRenderer;
-import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.render.entity.model.EntityModelLayer;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Matrix4f;
-import net.minecraft.util.math.Quaternion;
-import net.minecraft.util.math.Vec3d;
-import org.joml.Vector3f;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.RotationAxis;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 
 /**
- * The Sunbird is literally a sphere: rendered procedurally, no model or texture
- * files needed. Perfectly round glowing yellow ball + two dot eyes and a smile.
- * The face always rotates toward the camera, so it seems to watch whoever looks
- * at it (a nod to Verity's ever-present companion vibe).
+ * Renders the Sunbird as a glowing round ball with a face, plus two mood layers:
+ *  - dread >= ~0.5: dark "static" speckles orbit the ball (horror creeping in)
+ *  - haunted:       the whole ball tints toward black-purple and flickers
+ *
+ * All drawing uses plain VertexConsumer calls - no shader or texture dependencies
+ * beyond the one 32x32 skin, so it works on vanilla clients too (they just won't
+ * see us; this renderer only runs when the mod is installed client-side).
  */
-public class SunbirdRenderer<T extends MobEntity> extends MobEntityRenderer<T> {
-    private static final Identifier ATLAS = SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE;
-    private static final Vector3f BODY = new Vector3f(1.00f, 0.84f, 0.20f);  // sunny yellow
-    private static final Vector3f INK  = new Vector3f(0.10f, 0.08f, 0.05f);  // face ink
-    private static final float R = 0.32f;
+public class SunbirdRenderer extends EntityRenderer<SunbirdEntity> {
+
+    public static final EntityModelLayer SUNBIRD_LAYER =
+            new EntityModelLayer(new Identifier("sunbird", "sunbird"), "main");
+
+    private static final Identifier SKIN = new Identifier("sunbird", "textures/entity/sunbird.png");
+    private final SunbirdModel model;
 
     public SunbirdRenderer(EntityRendererFactory.Context ctx) {
-        super(ctx, new SunbirdModel(), 0.25f);
+        super(ctx);
+        this.model = new SunbirdModel(ctx.getPart(SUNBIRD_LAYER));
+        this.shadowRadius = 0.5f;
     }
 
     @Override
-    public Identifier getTexture(T entity) {
-        return ATLAS;
+    public Identifier getTexture(SunbirdEntity entity) {
+        return SKIN;
     }
 
     @Override
-    public void render(T entity, float yaw, float tickDelta, MatrixStack matrices,
+    protected int getBlockLight(SunbirdEntity entity, BlockPos pos) {
+        // The bird always glows a little, even in a dark cave.
+        return Math.max(super.getBlockLight(entity, pos), 14 << 4);
+    }
+
+    @Override
+    public void render(SunbirdEntity entity, float yaw, float tickDelta, MatrixStack matrices,
                        VertexConsumerProvider vertexConsumers, int light) {
+        // Drive the talk animation from the tracked state.
+        model.talkAmount = entity.isTalking()
+                ? 0.5f + 0.5f * (float) Math.sin((entity.age + tickDelta) * 0.9f) : 0f;
+
         matrices.push();
-        float bob = (float) Math.sin((entity.age + tickDelta) * 0.1f) * 0.05f;
-        matrices.translate(0.0, 0.42 + bob, 0.0);
+        // Idle hover bob - it's a floating ball.
+        float bob = (float) Math.sin((entity.age + tickDelta) * 0.06f) * 0.08f;
+        matrices.translate(0.0, 0.1 + bob, 0.0);
+        // Face turns toward where the head is pointed.
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-yaw));
 
-        VertexBufferSink buffer = new VertexBufferSink(
-                vertexConsumers.getBuffer(RenderLayer.getEntitySolid(ATLAS)));
+        float dread = entity.getDread();
+        boolean haunted = entity.isHauntedVisual();
+        // Mood tint: happy = bright yellow-white, haunted = near-black purple.
+        float r = 1f - dread * 0.85f;
+        float g = 1f - dread * 0.95f;
+        float b = haunted ? 0.9f : (1f - dread * 0.4f);
+        if (haunted && (entity.age % 17) < 3) { r *= 0.3f; g *= 0.3f; b *= 0.3f; } // flicker
 
-        drawSphere(buffer, light, R, 20, 12, BODY);
+        VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayer.getEntitySolid(SKIN));
+        model.render(matrices, consumer, light, OverlayTexture.DEFAULT_UV, r, g, b, 1f);
 
-        // Face orientation: front of the sphere turns toward the camera
-        Vec3d cam = this.camera.getPos().subtract(entity.getLerpedPos(tickDelta));
-        float faceYaw = (float) Math.toDegrees(Math.atan2(cam.x, cam.z)) + 90f;
+        // --- Horror layer: static speckles orbit when dread rises ---
+        if (dread > 0.45f) {
+            drawStatic(matrices, vertexConsumers, entity, dread);
+        }
 
-        matrices.multiply(new Quaternion(new Vector3f(0f, 1f, 0f), faceYaw, true));
-        // Eyes: small dark squares standing proud of the surface at lat +/- positions
-        stampFeature(matrices, buffer, light, 12f, 22f, 0.05f, INK);   // right eye
-        stampFeature(matrices, buffer, light, 12f, -22f, 0.05f, INK);  // left eye
-        stampFeature(matrices, buffer, light, -16f, 0f, 0.09f, INK);   // smile patch
         matrices.pop();
-
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light);
     }
 
-    /** Thin adapter so the quad helpers below stay readable. */
-    private record VertexBufferSink(VertexConsumer inner) {
-        void vertex(Matrix4f m, Vector3f v, Vector3f col, int light) {
-            inner.vertex(m, v.x, v.y, v.z)
-                 .color(col.x(), col.y(), col.z(), 1f)
-                 .texture(0.5f, 0.5f)
-                 .overlay(15728880)
-                 .light(light)
-                 .normal(v.x, v.y, v.z);
-        }
-    }
-
-    private void drawSphere(VertexBufferSink out, int light, float r, int slices, int stacks, Vector3f col) {
-        Matrix4f identity = new Matrix4f();
-        for (int i = 0; i < stacks; i++) {
-            float phi0 = (float) Math.PI * (-0.5f + (float) i / stacks);
-            float phi1 = (float) Math.PI * (-0.5f + (float) (i + 1) / stacks);
-            for (int j = 0; j < slices; j++) {
-                float t0 = 2f * (float) Math.PI * j / slices;
-                float t1 = 2f * (float) Math.PI * (j + 1) / slices;
-                quad(out, identity, light, col,
-                        sph(r, phi0, t0), sph(r, phi1, t0), sph(r, phi1, t1), sph(r, phi0, t1));
-            }
-        }
-    }
-
-    /**
-     * Place a tiny flat square patch on the sphere surface at (latDeg, lonDeg),
-     * oriented along the outward normal. Used for eyes and mouth.
-     */
-    private void stampFeature(MatrixStack matrices, VertexBufferSink out, int light,
-                              float latDeg, float lonDeg, float size, Vector3f col) {
-        matrices.push();
-        matrices.multiply(new Quaternion(new Vector3f(0f, 1f, 0f), lonDeg, true));
-        matrices.multiply(new Quaternion(new Vector3f(1f, 0f, 0f), -latDeg, true));
-        matrices.translate(0f, 0f, R * 1.001f);
+    /** Cheap orbiting "tv static" dots - pure geometry, no shaders needed. */
+    private void drawStatic(MatrixStack matrices, VertexConsumerProvider providers,
+                            SunbirdEntity entity, float dread) {
+        VertexConsumer vc = providers.getBuffer(RenderLayer.getLineStrip());
         Matrix4f m = matrices.peek().getPositionMatrix();
-        float s = size;
-        quad(out, m, light, col,
-                new Vector3f(-s, -s, 0f), new Vector3f(s, -s, 0f),
-                new Vector3f(s, s, 0f), new Vector3f(-s, s, 0f));
-        matrices.pop();
-    }
-
-    private static Vector3f sph(float r, float latRad, float lonRad) {
-        return new Vector3f(r * (float) Math.cos(latRad) * (float) Math.sin(lonRad),
-                r * (float) Math.sin(latRad),
-                r * (float) Math.cos(latRad) * (float) Math.cos(lonRad));
-    }
-
-    private static void quad(VertexBufferSink out, Matrix4f m, int light, Vector3f col, Vector3f... vs) {
-        for (Vector3f v : vs) out.vertex(m, v, col, light);
-    }
-
-    @Override
-    protected int getBlockLight(T entity, Vec3d pos) {
-        // self-glow like a little sun
-        return Math.max(super.getBlockLight(entity, pos), 14 << 4);
+        Matrix3f nm = matrices.peek().getNormalMatrix();
+        int count = 4 + (int) (dread * 10);
+        for (int i = 0; i < count; i++) {
+            float t = (entity.age + i * 7L) * 0.05f + i * 2.4f;
+            float rad = 0.45f;
+            float x = (float) Math.cos(t) * rad;
+            float y = (float) Math.sin(t * 1.7f) * 0.35f + 0.45f;
+            float z = (float) Math.sin(t) * rad;
+            vc.vertex(m, x, y, z).color(0, 0, 0, 200).normal(nm, 0f, 1f, 0f);
+            vc.vertex(m, x + 0.02f, y + 0.02f, z).color(0, 0, 0, 200).normal(nm, 0f, 1f, 0f);
+        }
     }
 }

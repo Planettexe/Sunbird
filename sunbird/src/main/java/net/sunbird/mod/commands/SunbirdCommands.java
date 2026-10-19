@@ -7,6 +7,7 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import java.util.function.Supplier;
 import net.minecraft.util.Formatting;
 import net.sunbird.mod.SunbirdConfig;
 import net.sunbird.mod.ai.AiBridge;
@@ -33,14 +34,14 @@ public final class SunbirdCommands {
             .register(CommandManager.literal("aiclear")
                 .requires(src -> src.hasPermissionLevel(2))
                 .executes(ctx -> {
-                    ctx.getSource().sendFeedback(Text.literal(LangService.tr(ctx.getSource().getEntity(), "sunbird.prefix") + LangService.tr(ctx.getSource().getEntity(), "sunbird.cmd.aiclear")).formatted(Formatting.GOLD), true);
+                    ctx.getSource().sendFeedback(() -> (Text.literal(LangService.tr(ctx.asPlayer(), "sunbird.prefix") + LangService.tr(ctx.asPlayer(), "sunbird.cmd.aiclear")).formatted(Formatting.GOLD)), true);
                     return 1;
                 }))
             .register(CommandManager.literal("aiwake")
                 .requires(src -> src.hasPermissionLevel(2))
                 .executes(ctx -> {
                     BehaviorBrain.maybeAutonomousThought();
-                    ctx.getSource().sendFeedback(Text.literal(LangService.tr(ctx.getSource().getEntity(), "sunbird.prefix") + LangService.tr(ctx.getSource().getEntity(), "sunbird.cmd.thinking")).formatted(Formatting.YELLOW), false);
+                    ctx.getSource().sendFeedback(() -> (Text.literal(LangService.tr(ctx.asPlayer(), "sunbird.prefix") + LangService.tr(ctx.asPlayer(), "sunbird.cmd.thinking")).formatted(Formatting.YELLOW)), false);
                     return 1;
                 }))
             .register(CommandManager.literal("aivoice")
@@ -65,8 +66,8 @@ public final class SunbirdCommands {
                 .then(CommandManager.literal("show").executes(SunbirdCommands::show))
                 .then(CommandManager.literal("reload").executes(ctx -> {
                     SunbirdConfig.reload();
-                    ctx.getSource().sendFeedback(Text.literal(LangService.tr(ctx.getSource().getEntity(), "sunbird.prefix")
-            + LangService.tr(ctx.getSource().getEntity(), "sunbird.cmd.reload").replace("%s", AiBridge.describe())).formatted(Formatting.GREEN), true);
+                    ctx.getSource().sendFeedback(() -> (Text.literal(LangService.tr(ctx.asPlayer(), "sunbird.prefix")
+            + LangService.tr(ctx.asPlayer(), "sunbird.cmd.reload").replace("%s", AiBridge.describe())).formatted(Formatting.GREEN)), true);
                     return 1;
                 }))
                 .then(CommandManager.literal("test").executes(SunbirdCommands::test))
@@ -78,7 +79,7 @@ public final class SunbirdCommands {
 
     private static int ask(CommandContext<ServerCommandSource> ctx) {
         String q = StringArgumentType.getString(ctx, "question");
-        ServerPlayerEntity player = ctx.getSource().getEntity();
+        ServerPlayerEntity player = ctx.asPlayer();
         if (player == null) {
             ctx.getSource().sendError(Text.literal(LangService.tr(null, "sunbird.cmd.playersonly")));
             return 0;
@@ -90,22 +91,22 @@ public final class SunbirdCommands {
 
     private static int show(CommandContext<ServerCommandSource> ctx) {
         SunbirdConfig cfg = SunbirdConfig.get();
-        ctx.getSource().sendFeedback(Text.literal("apiBaseUrl = " + cfg.apiBaseUrl).formatted(Formatting.YELLOW), false);
-        ctx.getSource().sendFeedback(Text.literal("model = " + cfg.model + "  style = " + cfg.endpointStyle).formatted(Formatting.YELLOW), false);
-        ctx.getSource().sendFeedback(Text.literal("temperature = " + cfg.temperature + "  maxTokens = " + cfg.maxTokens).formatted(Formatting.YELLOW), false);
-        ctx.getSource().sendFeedback(Text.literal("listenToAllChat = " + cfg.listenToAllChat + "  memoryTurns = " + cfg.memoryTurns).formatted(Formatting.YELLOW), false);
-        ctx.getSource().sendFeedback(Text.literal("config file: config/sunbird/config.json").formatted(Formatting.GRAY), false);
+        ctx.getSource().sendFeedback(() -> (Text.literal("apiBaseUrl = " + cfg.apiBaseUrl).formatted(Formatting.YELLOW)), false);
+        ctx.getSource().sendFeedback(() -> (Text.literal("model = " + cfg.model + "  style = " + cfg.endpointStyle).formatted(Formatting.YELLOW)), false);
+        ctx.getSource().sendFeedback(() -> (Text.literal("temperature = " + cfg.temperature + "  maxTokens = " + cfg.maxTokens).formatted(Formatting.YELLOW)), false);
+        ctx.getSource().sendFeedback(() -> (Text.literal("listenToAllChat = " + cfg.listenToAllChat + "  memoryTurns = " + cfg.memoryTurns).formatted(Formatting.YELLOW)), false);
+        ctx.getSource().sendFeedback(() -> (Text.literal("config file: config/sunbird/config.json").formatted(Formatting.GRAY)), false);
         return 1;
     }
 
     private static int test(CommandContext<ServerCommandSource> ctx) {
         var source = ctx.getSource();
-        source.sendFeedback(Text.literal(LangService.tr(source.getEntity(), "sunbird.prefix") + LangService.tr(source.getEntity(), "sunbird.cmd.probing").replace("%s", AiBridge.describe())).formatted(Formatting.GRAY), false);
+        source.sendFeedback(() -> (Text.literal(LangService.tr(source.asPlayer(), "sunbird.prefix") + LangService.tr(source.asPlayer(), "sunbird.cmd.probing").replace("%s", AiBridge.describe())).formatted(Formatting.GRAY)), false);
         AiBridge.healthCheck().whenComplete((res, err) -> {
             var entry = res.entrySet().iterator().next();
             source.getServer().execute(() ->
-                    source.sendFeedback(Text.literal("[Sunbird] " + entry.getValue())
-                            .formatted(entry.getKey() ? Formatting.GREEN : Formatting.RED), false));
+                    source.sendFeedback(() -> (Text.literal("[Sunbird] " + entry.getValue())
+                            .formatted(entry.getKey() ? Formatting.GREEN : Formatting.RED)), false));
         });
         return 1;
     }
@@ -127,8 +128,8 @@ public final class SunbirdCommands {
             }
             SunbirdConfig.save();
             SunbirdConfig.reload();
-            ctx.getSource().sendFeedback(Text.literal(LangService.tr(ctx.getSource().getEntity(), "sunbird.prefix") + LangService.tr(ctx.getSource().getEntity(), "sunbird.cmd.saved").replace("%s", key).replace("%s", value))
-                    .formatted(Formatting.GREEN), true);
+            ctx.getSource().sendFeedback(() -> (Text.literal(LangService.tr(ctx.asPlayer(), "sunbird.prefix") + LangService.tr(ctx.asPlayer(), "sunbird.cmd.saved").replace("%s", key).replace("%s", value))
+                    .formatted(Formatting.GREEN)), true);
             return 1;
         } catch (NoSuchFieldException e) {
             ctx.getSource().sendError(Text.literal(LangService.tr(null, "sunbird.cmd.unknownkey").replace("%s", key)
@@ -147,7 +148,7 @@ public final class SunbirdCommands {
      * so no C2S channel is needed and vanilla clients simply get nothing extra ever.
      */
     private static int voicePref(CommandContext<ServerCommandSource> ctx, boolean on) {
-        ServerPlayerEntity player = ctx.getSource().getEntity();
+        ServerPlayerEntity player = ctx.asPlayer();
         if (player == null) {
             ctx.getSource().sendError(Text.literal(LangService.tr(null, "sunbird.cmd.playersonly.voice")));
             return 0;
@@ -159,28 +160,28 @@ public final class SunbirdCommands {
         if (!muted) cfg.ttsMutedPlayers.remove(name);
         SunbirdConfig.save();
         net.sunbird.mod.net.VoicePrefs.set(player.getUuid(), on);
-        ctx.getSource().sendFeedback(Text.literal(LangService.tr(player, "sunbird.prefix") + LangService.tr(player, on ? "sunbird.cmd.voice_on" : "sunbird.cmd.voice_off")).formatted(on ? Formatting.GREEN : Formatting.GRAY), false);
+        ctx.getSource().sendFeedback(() -> (Text.literal(LangService.tr(player, "sunbird.prefix") + LangService.tr(player, on ? "sunbird.cmd.voice_on" : "sunbird.cmd.voice_off")).formatted(on ? Formatting.GREEN : Formatting.GRAY)), false);
         return 1;
     }
 
     private static int voiceStatus(CommandContext<ServerCommandSource> ctx) {
         var source = ctx.getSource();
-        source.sendFeedback(Text.literal("[Sunbird] TTS: "
-                + net.sunbird.mod.tts.TtsBridge.describe()).formatted(Formatting.YELLOW), false);
+        source.sendFeedback(() -> (Text.literal("[Sunbird] TTS: "
+                + net.sunbird.mod.tts.TtsBridge.describe()).formatted(Formatting.YELLOW)), false);
         SunbirdConfig cfg = SunbirdConfig.get();
-        source.sendFeedback(Text.literal("engine=" + cfg.ttsEngine + " voice=" + cfg.ttsVoice
+        source.sendFeedback(() -> (Text.literal("engine=" + cfg.ttsEngine + " voice=" + cfg.ttsVoice
                 + " speed=" + cfg.ttsSpeed + " volume=" + cfg.ttsVolume
-                + " warps=" + cfg.ttsHorrorWarps).formatted(Formatting.GRAY), false);
+                + " warps=" + cfg.ttsHorrorWarps).formatted(Formatting.GRAY)), false);
         if (!cfg.ttsMutedPlayers.isEmpty()) {
-            source.sendFeedback(Text.literal("muted: " + String.join(", ", cfg.ttsMutedPlayers))
-                    .formatted(Formatting.GRAY), false);
+            source.sendFeedback(() -> (Text.literal("muted: " + String.join(", ", cfg.ttsMutedPlayers))
+                    .formatted(Formatting.GRAY)), false);
         }
         return 1;
     }
 
     /** Synthesise a test clip right now and send it ONLY to the sender at their head. */
     private static int voiceTest(CommandContext<ServerCommandSource> ctx) {
-        ServerPlayerEntity player = ctx.getSource().getEntity();
+        ServerPlayerEntity player = ctx.asPlayer();
         if (player == null) {
             ctx.getSource().sendError(Text.literal("Only players can hear the test."));
             return 0;
@@ -190,8 +191,8 @@ public final class SunbirdCommands {
             return 0;
         }
         String text = StringArgumentType.getString(ctx, "text");
-        ctx.getSource().sendFeedback(Text.literal(LangService.tr(player, "sunbird.prefix") + LangService.tr(player, "sunbird.cmd.voicing")
-                .replace("%s", text).replace("%s", net.sunbird.mod.tts.TtsBridge.describe())).formatted(Formatting.GRAY), false);
+        ctx.getSource().sendFeedback(() -> (Text.literal(LangService.tr(player, "sunbird.prefix") + LangService.tr(player, "sunbird.cmd.voicing")
+                .replace("%s", text).replace("%s", net.sunbird.mod.tts.TtsBridge.describe())).formatted(Formatting.GRAY)), false);
         final int[] anchor = {(int) (player.getX() * 8), (int) ((player.getY() + 1.5) * 8), (int) (player.getZ() * 8)};
         net.sunbird.mod.tts.TtsBridge.synthesizeNow(text).whenComplete((wav, err) -> {
             if (err != null || wav == null || wav.length == 0) {
@@ -222,7 +223,7 @@ public final class SunbirdCommands {
             cfg.ttsMutedPlayers.remove(target);
         }
         SunbirdConfig.save();
-        ctx.getSource().sendFeedback(Text.literal(LangService.tr(ctx.getSource().getEntity(), "sunbird.prefix") + target + " " + LangService.tr(ctx.getSource().getEntity(), mute ? "sunbird.cmd.target_voice_off" : "sunbird.cmd.target_voice_on")).formatted(Formatting.GOLD), true);
+        ctx.getSource().sendFeedback(() -> (Text.literal(LangService.tr(ctx.asPlayer(), "sunbird.prefix") + target + " " + LangService.tr(ctx.asPlayer(), mute ? "sunbird.cmd.target_voice_off" : "sunbird.cmd.target_voice_on")).formatted(Formatting.GOLD)), true);
         return 1;
     }
 }
