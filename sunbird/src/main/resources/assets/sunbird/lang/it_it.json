@@ -1,0 +1,33 @@
+{
+  "entity.sunbird.sunbird": "Uccello Solare",
+  "item.sunbird.sunbird_spawn_egg": "Uovo di generazione Uccello Solare",
+  "block.sunbird.sunstone": "Pietra Solare",
+
+  "sunbird.prefix": "[Uccello Solare] ",
+  "sunbird.whispers": "%s sussurra: ",
+
+  "sunbird.cmd.aiclear": "Memoria cancellata.",
+  "sunbird.cmd.thinking": "Sto pensando...",
+  "sunbird.cmd.playersonly": "Solo i giocatori possono parlare con l'uccello.",
+  "sunbird.cmd.thinking_dots": "[L'Uccello Solare sta pensando...]",
+  "sunbird.cmd.reload": "Configurazione ricaricata. Backend: %s",
+  "sunbird.cmd.probing": "Prova di %s...",
+  "sunbird.cmd.badfield": "Tipo di campo non supportato per %s",
+  "sunbird.cmd.saved": "%s = %s (salvato e applicato)",
+  "sunbird.cmd.unknownkey": "Chiave di configurazione sconosciuta: %s",
+  "sunbird.cmd.failed": "Fallito: %s",
+  "sunbird.cmd.playersonly.voice": "Solo i giocatori possono attivare la radio dell'uccello.",
+  "sunbird.cmd.voice_on": "Voce ATTIVATA",
+  "sunbird.cmd.voice_off": "Voce DISATTIVATA",
+  "sunbird.cmd.tts_disabled": "TTS disattivato - usa /aiconfig set ttsEnabled true",
+  "sunbird.cmd.voicing": "Riproduzione di \"%s\" tramite %s",
+  "sunbird.cmd.voicetest_failed": "Test vocale fallito: %s",
+  "sunbird.cmd.muted": "silenziati: %s",
+  "sunbird.cmd.target_voice_on": "Voce di %s ATTIVATA",
+  "sunbird.cmd.target_voice_off": "Voce di %s DISATTIVATA",
+
+  "sunbird.spook.smell": "All'improvviso senti odore di pancake. Non ci sono pancake.",
+  "sunbird.spook.sky_thanks": "Il cielo ti ringrazia.",
+  "sunbird.haunt.light_out": "la luce in questo uccello si sta spegnendo.",
+  "sunbird.haunt.blinks": "l'uccello solare sbatte le palpebre. il bagliore torna. ...scusa?"
+}

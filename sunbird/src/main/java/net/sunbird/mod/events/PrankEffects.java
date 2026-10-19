@@ -68,7 +68,7 @@ public final class PrankEffects {
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
                 p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_PLING,
                         SoundCategory.PLAYERS, 0.8f, 1.2f);
-                p.sendMessage(Text.literal("You suddenly smell pancakes. There are no pancakes.")
+                p.sendMessage(Text.literal(net.sunbird.mod.i18n.LangService.tr(p, "sunbird.spook.smell"))
                         .formatted(Formatting.GOLD, Formatting.ITALIC), false);
             }
         });
@@ -90,7 +90,7 @@ public final class PrankEffects {
                         new net.minecraft.item.ItemStack(item));
         drop.setPickupDelay(60);
         target.getWorld().spawnEntity(drop);
-        target.sendMessage(Text.literal("The sky thanks you.").formatted(Formatting.AQUA), false);
+        target.sendMessage(Text.literal(net.sunbird.mod.i18n.LangService.tr(target, "sunbird.spook.sky_thanks")).formatted(Formatting.AQUA), false);
     }
 
     public static boolean chance(double p) { return R.nextDouble() < p; }

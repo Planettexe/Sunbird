@@ -36,6 +36,13 @@ public class SunbirdConfig {
 
     // ---- Persona ----
     public String personaName = "Sunbird";
+
+    // ---- Language (multi-language support) ----
+    /** Translate UI + whisper AI replies per player using their client language. */
+    public boolean multilingual = true;
+    /** Force ALL output (UI + AI) into one locale, e.g. "fr_fr". Empty = auto per player. */
+    public String forcedLanguage = "";
+
     /** The system prompt. Keep it open-ended: the bird talks about anything. */
     public String systemPrompt = """
             You are Sunbird, a perfectly round glowing yellow ball of a bird with a simple \

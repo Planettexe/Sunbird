@@ -187,7 +187,7 @@ public final class HauntDirector {
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
                 SpookyEffects.snuffLights(p, 8);
                 SpookyEffects.flickerGlow(p);
-                p.sendMessage(Text.literal("the light in this bird is going out.").formatted(
+                p.sendMessage(Text.literal(net.sunbird.mod.i18n.LangService.tr(p, "sunbird.haunt.light_out")).formatted(
                         Formatting.DARK_PURPLE, Formatting.ITALIC), false);
             }
             SpookyEffects.globalHeartbeat(server);
@@ -220,7 +220,7 @@ public final class HauntDirector {
         ChatHistory.add("*system*", "You are yourself again. It felt like a long sleep. Mention nothing unless asked. Maybe apologise in your own way.");
         server.execute(() -> {
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
-                p.sendMessage(Text.literal("the sunbird blinks. the glow comes back. ...sorry?")
+                p.sendMessage(Text.literal(net.sunbird.mod.i18n.LangService.tr(p, "sunbird.haunt.blinks"))
                         .formatted(Formatting.GOLD, Formatting.ITALIC), false);
             }
         });

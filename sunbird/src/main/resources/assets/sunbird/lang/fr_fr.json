@@ -1,0 +1,33 @@
+{
+  "entity.sunbird.sunbird": "Oiseau-Soleil",
+  "item.sunbird.sunbird_spawn_egg": "Oeuf d'apparition d'Oiseau-Soleil",
+  "block.sunbird.sunstone": "Pierre de Soleil",
+
+  "sunbird.prefix": "[Oiseau-Soleil] ",
+  "sunbird.whispers": "%s chuchote : ",
+
+  "sunbird.cmd.aiclear": "Mémoire effacée.",
+  "sunbird.cmd.thinking": "Je réfléchis...",
+  "sunbird.cmd.playersonly": "Seuls les joueurs peuvent parler à l'oiseau.",
+  "sunbird.cmd.thinking_dots": "[L'Oiseau-Soleil réfléchit...]",
+  "sunbird.cmd.reload": "Configuration rechargée. Backend : %s",
+  "sunbird.cmd.probing": "Test de %s...",
+  "sunbird.cmd.badfield": "Type de champ non pris en charge pour %s",
+  "sunbird.cmd.saved": "%s = %s (enregistré et appliqué)",
+  "sunbird.cmd.unknownkey": "Clé de configuration inconnue : %s",
+  "sunbird.cmd.failed": "Échec : %s",
+  "sunbird.cmd.playersonly.voice": "Seuls les joueurs peuvent activer la radio de l'oiseau.",
+  "sunbird.cmd.voice_on": "Voix ACTIVÉE",
+  "sunbird.cmd.voice_off": "Voix DÉSACTIVÉE",
+  "sunbird.cmd.tts_disabled": "TTS désactivé - tapez /aiconfig set ttsEnabled true",
+  "sunbird.cmd.voicing": "Synthèse vocale de « %s » via %s",
+  "sunbird.cmd.voicetest_failed": "Échec du test vocal : %s",
+  "sunbird.cmd.muted": "réduit au silence : %s",
+  "sunbird.cmd.target_voice_on": "Voix de %s ACTIVÉE",
+  "sunbird.cmd.target_voice_off": "Voix de %s DÉSACTIVÉE",
+
+  "sunbird.spook.smell": "Vous sentez soudain des crêpes. Il n'y a pas de crêpes.",
+  "sunbird.spook.sky_thanks": "Le ciel vous remercie.",
+  "sunbird.haunt.light_out": "la lumière dans cet oiseau est en train de s'éteindre.",
+  "sunbird.haunt.blinks": "l'oiseau-soleil cligne. la lueur revient. ...pardon ?"
+}

@@ -52,7 +52,8 @@ public final class SunbirdPersona {
         if (text == null || text.isBlank() || player == null) return;
         String clean = sanitize(text);
         server.execute(() -> player.sendMessage(
-                Text.literal(name() + " whispers: ").formatted(net.minecraft.util.Formatting.GOLD)
+                Text.literal(net.sunbird.mod.i18n.LangService.tr(player, "sunbird.whispers")
+                        .replace("%s", name())).formatted(net.minecraft.util.Formatting.GOLD)
                         .append(Text.literal(clean).formatted(net.minecraft.util.Formatting.ITALIC)),
                 false));
         VoiceDirector.voiceWhisper(player, clean);

@@ -125,12 +125,14 @@ public final class BehaviorBrain {
     }
 
     public static void onJoin(ServerPlayerEntity player) {
+        net.sunbird.mod.i18n.LangService.remember(player);
         if (!SunbirdConfig.get().reactToEvents) return;
         ChatHistory.add("*system*", player.getName().getString() + " joined the server.");
         enqueue("event", "* " + player.getName().getString() + " just joined the server. Say something welcoming or curious.", null);
     }
 
     public static void onLeave(ServerPlayerEntity player) {
+        net.sunbird.mod.i18n.LangService.forget(player);
         if (!SunbirdConfig.get().reactToEvents) return;
         ChatHistory.add("*system*", player.getName().getString() + " left the server.");
     }
@@ -200,6 +202,15 @@ public final class BehaviorBrain {
             String override = VOICE_OVERRIDE.get();
             if (override != null && !override.isBlank()) {
                 context.add(0, new AiBridge.Turn("system", "VOICE OVERRIDE: " + override));
+            }
+            // Multi-language: whisper replies go in the asking player's client language.
+            if (job.replyTarget() != null && SunbirdMod.SERVER != null) {
+                var tgt = SunbirdMod.SERVER.getPlayerManager().getPlayer(job.replyTarget());
+                String lang = net.sunbird.mod.i18n.LangService.aiLanguageInstruction(tgt);
+                if (!lang.isBlank()) context.add(0, new AiBridge.Turn("system", lang));
+            } else {
+                String lang = net.sunbird.mod.i18n.LangService.aiLanguageDigest();
+                if (!lang.isBlank()) context.add(0, new AiBridge.Turn("system", lang));
             }
             context.add(new AiBridge.Turn("user", job.prompt()));
 
