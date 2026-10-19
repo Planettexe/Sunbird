@@ -282,7 +282,7 @@ public final class HauntDirector {
     public static boolean shouldFleeFrom(net.minecraft.entity.LivingEntity entity) {
         if (!(entity instanceof net.minecraft.server.network.ServerPlayerEntity sp)) return false;
         MoodState m = mood();
-        if (m.grudges.containsKey(sp.getUuidAsString())) return true;
+        if (m.resentment > 0.6f) return true; // holding a grudge: keeps its distance
         return m.dread > 0.7f; // deeply haunted: it avoids everyone a little
     }
 

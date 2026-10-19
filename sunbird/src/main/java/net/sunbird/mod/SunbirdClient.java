@@ -70,15 +70,7 @@ public class SunbirdClient implements ClientModInitializer {
         try {
             AudioStream stream = new WavAudioStream(new ByteArrayInputStream(wav));
             Vec3d pos = resolvePos(client, entityId, x, y, z);
-            SoundInstance inst = new PositionedSoundInstance(
-                    SunbirdMod.id("voice_stream"),
-                    SoundCategory.PLAYERS,
-                    volume, 1.0f,
-                    SoundInstance.createRandom(),
-                    false, 0, SoundInstance.AttenuationType.LINEAR,
-                    pos.x, pos.y, pos.z,
-                    true);
-            client.getSoundManager().play(new StreamedSound(inst, stream));
+            RawWavPlayer.play(client, stream, pos, volume);
         } catch (Exception e) {
             // Bad/unsupported audio? The chat line already carried the message. Stay quiet.
         }
@@ -133,17 +125,18 @@ public class SunbirdClient implements ClientModInitializer {
         @Override public AudioFormat getFormat() { return format; }
 
         @Override
-        public int read(byte[] buffer, int length) throws java.io.IOException {
+        public java.nio.ByteBuffer getBuffer(int frames) throws java.io.IOException {
+            int bytes = frames * format.getFrameSize();
+            byte[] buf = new byte[bytes];
             int done = 0;
-            while (done < length) {
-                int n = source.read(buffer, done, length - done);
+            while (done < bytes) {
+                int n = source.read(buf, done, bytes - done);
                 if (n <= 0) break;
                 done += n;
             }
-            return done > 0 ? done : -1;
+            if (done <= 0) return null; // end of stream
+            return java.nio.ByteBuffer.wrap(buf, 0, done).asReadOnlyBuffer();
         }
-
-        @Override public long getLength() throws java.io.IOException { return -1; }
 
         @Override public void close() throws java.io.IOException { source.close(); }
 
@@ -254,12 +247,10 @@ public class SunbirdClient implements ClientModInitializer {
             M_CLOSE = smCls.getDeclaredMethod("close");
             M_CLOSE.setAccessible(true);
 
-            RUN_MODE_STREAMING = java.lang.reflect.Array.get(rmCls.arrayType() != null ? ArrayOf(rmCls) : rmCls, 0);
+            RUN_MODE_STREAMING = null;
             Object[] modes = rmCls.getEnumConstants();
-            for (Object m : modes) if (m.toString().equals("STREAMING")) RUN_MODE_STREAMING = m;
+            if (modes != null) for (Object m : modes) if (m.toString().equals("STREAMING")) RUN_MODE_STREAMING = m;
             ready = F_CHANNEL != null && F_ENGINE != null && RUN_MODE_STREAMING != null;
         }
-
-        private static Class<?> ArrayOf(Class<?> c) { return java.lang.reflect.Array.newInstance(c, 0).getClass(); }
     }
 }

@@ -38,12 +38,11 @@ public final class LangService {
 
     public static void remember(ServerPlayerEntity player) {
         if (player == null) return;
-        // 1.20.4 Yarn: ServerPlayerEntity has no getClientLanguage(); the locale arrives
-        // in SettingsAndClientBrand via the network handler.
+        // 1.20.4 Yarn: ServerPlayerEntity.getClientOptions() -> SyncedClientOptions.language()
         String loc = null;
         try {
-            var handler = player.networkHandler;
-            if (handler != null) loc = handler.getLanguage();
+            var opts = player.getClientOptions();
+            if (opts != null) loc = opts.language();
         } catch (Throwable ignored) {}
         if (loc == null || loc.isBlank()) loc = "en_us";
         LOCALES.put(player.getUuidAsString(), loc.toLowerCase(Locale.ROOT).replace('-', '_'));

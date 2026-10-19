@@ -28,7 +28,7 @@ public final class PrankEffects {
 
     /** Bonk: play the cow-bell "hit" sound right on top of someone. */
     public static void bonk(ServerPlayerEntity target) {
-        target.getWorld().playSound(null, target.getBlockPos(),
+        target.getWorld().playSound(target, target.getBlockPos(),
                 SoundEvents.ENTITY_COW_HURT, SoundCategory.PLAYERS, 1.0f, 2.0f);
         target.sendMessage(Text.literal("*bonk*").formatted(Formatting.WHITE), false);
     }
@@ -44,7 +44,7 @@ public final class PrankEffects {
                     head.getZ() + 0.5 + R.nextFloat() - 0.5f,
                     0, -0.2, 0);
         }
-        world.playSound(null, head, SoundEvents.ENTITY_GENERIC_SPLASH,
+        world.playSound(target, head, SoundEvents.ENTITY_GENERIC_SPLASH,
                 SoundCategory.PLAYERS, 0.6f, 1.4f);
     }
 
@@ -57,7 +57,7 @@ public final class PrankEffects {
             chick.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
             chick.setVelocity(0, 0.4, 0);
             world.spawnEntity(chick);
-            world.playSound(null, at, SoundEvents.ENTITY_CHICKEN_AMBIENT,
+            world.playSound(null, at.getX()+0.5, at.getY(), at.getZ()+0.5, SoundEvents.ENTITY_CHICKEN_AMBIENT,
                     SoundCategory.NEUTRAL, 1.0f, 0.6f);
         }
     }
@@ -66,7 +66,7 @@ public final class PrankEffects {
     public static void imaginaryPicnic(MinecraftServer server) {
         server.execute(() -> {
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
-                p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_PLING,
+                p.getWorld().playSound(p, p.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_PLING,
                         SoundCategory.PLAYERS, 0.8f, 1.2f);
                 p.sendMessage(Text.literal(net.sunbird.mod.i18n.LangService.tr(p, "sunbird.spook.smell"))
                         .formatted(Formatting.GOLD, Formatting.ITALIC), false);
@@ -77,8 +77,8 @@ public final class PrankEffects {
     /** Flip the pitch of the world around them briefly by spamming low-volume cat sounds. */
     public static void cursedCatSerenade(ServerPlayerEntity target) {
         for (int i = 0; i < 3; i++) {
-            target.getWorld().playSound(null,
-                    target.getBlockPos().add(R.nextInt(5) - 2, 1, R.nextInt(5) - 2),
+            BlockPos catAt = target.getBlockPos().add(R.nextInt(5) - 2, 1, R.nextInt(5) - 2);
+            target.getWorld().playSound(target, catAt,
                     SoundEvents.ENTITY_CAT_AMBIENT, SoundCategory.HOSTILE, 0.8f, 0.7f + R.nextFloat());
         }
     }

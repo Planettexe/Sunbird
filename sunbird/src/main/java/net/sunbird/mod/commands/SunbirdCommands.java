@@ -37,8 +37,8 @@ public final class SunbirdCommands {
         dispatcher.register(CommandManager.literal("ai")
                 .requires(src -> src.hasPermissionLevel(0))
                 .then(CommandManager.argument("question", StringArgumentType.greedyString())
-                        .executes(SunbirdCommands::ask)))
-            .then(CommandManager.literal("aiclear")
+                        .executes(SunbirdCommands::ask))
+                .then(CommandManager.literal("aiclear")
                 .requires(src -> src.hasPermissionLevel(2))
                 .executes(ctx -> {
                     ctx.getSource().sendFeedback(() -> (Text.literal(LangService.tr(SunbirdCommands.playerOf(ctx), "sunbird.prefix") + LangService.tr(SunbirdCommands.playerOf(ctx), "sunbird.cmd.aiclear")).formatted(Formatting.GOLD)), true);

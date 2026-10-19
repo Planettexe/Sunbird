@@ -101,6 +101,6 @@ public final class SpookyEffects {
     public static boolean chance(double p) { return R.nextDouble() < p; }
 
     private static void playAt(World world, BlockPos pos, SoundEvent sound, SoundCategory cat, float vol, float pitch) {
-        world.playSound(null, pos, sound, cat, vol, pitch);
+        world.playSound(null, pos.getX(), pos.getY(), pos.getZ(), sound, cat, vol, pitch, 0L);
     }
 }
