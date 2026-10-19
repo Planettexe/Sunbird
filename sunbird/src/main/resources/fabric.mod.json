@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "sunbird",
+  "version": "${version}",
+  "name": "Sunbird",
+  "description": "A Verity-inspired AI companion rebuilt for servers: one llama.cpp (or any OpenAI-compatible) backend hosted by the server serves every player. A perfectly round glowing yellow ball with a face that talks about anything, remembers everything, and needs no GPU on your client.",
+  "authors": ["Sunbird Team"],
+  "contact": {},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["net.sunbird.mod.SunbirdMod"],
+    "client": ["net.sunbird.mod.SunbirdClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~1.20.4",
+    "java": ">=17",
+    "fabric-api": "*"
+  }
+}

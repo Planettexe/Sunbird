@@ -1,0 +1,33 @@
+{
+  "entity.sunbird.sunbird": "Sunbird",
+  "item.sunbird.sunbird_spawn_egg": "Sunbird Spawn Egg",
+  "block.sunbird.sunstone": "Sunstone",
+
+  "sunbird.prefix": "[Sunbird] ",
+  "sunbird.whispers": "%s whispers: ",
+
+  "sunbird.cmd.aiclear": "Memory wiped.",
+  "sunbird.cmd.thinking": "Thinking...",
+  "sunbird.cmd.playersonly": "Only players can talk to the bird.",
+  "sunbird.cmd.thinking_dots": "[Sunbird is thinking...]",
+  "sunbird.cmd.reload": "Config reloaded. Backend: %s",
+  "sunbird.cmd.probing": "Probing %s...",
+  "sunbird.cmd.badfield": "Unsupported field type for %s",
+  "sunbird.cmd.saved": "%s = %s (saved & applied)",
+  "sunbird.cmd.unknownkey": "Unknown config key: %s",
+  "sunbird.cmd.failed": "Failed: %s",
+  "sunbird.cmd.playersonly.voice": "Only players can toggle their bird radio.",
+  "sunbird.cmd.voice_on": "Voice ON",
+  "sunbird.cmd.voice_off": "Voice OFF",
+  "sunbird.cmd.tts_disabled": "TTS is disabled - set ttsEnabled true via /aiconfig set ttsEnabled true",
+  "sunbird.cmd.voicing": "Voicing \"%s\" via %s",
+  "sunbird.cmd.voicetest_failed": "Voice test failed: %s",
+  "sunbird.cmd.muted": "muted: %s",
+  "sunbird.cmd.target_voice_on": "%s voice ON",
+  "sunbird.cmd.target_voice_off": "%s voice OFF",
+
+  "sunbird.spook.smell": "You suddenly smell pancakes. There are no pancakes.",
+  "sunbird.spook.sky_thanks": "The sky thanks you.",
+  "sunbird.haunt.light_out": "the light in this bird is going out.",
+  "sunbird.haunt.blinks": "the sunbird blinks. the glow comes back. ...sorry?"
+}

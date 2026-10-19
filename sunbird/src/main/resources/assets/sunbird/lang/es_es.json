@@ -1,0 +1,33 @@
+{
+  "entity.sunbird.sunbird": "Pájaro Solar",
+  "item.sunbird.sunbird_spawn_egg": "Huevo generador de Pájaro Solar",
+  "block.sunbird.sunstone": "Piedra Solar",
+
+  "sunbird.prefix": "[Pájaro Solar] ",
+  "sunbird.whispers": "%s susurra: ",
+
+  "sunbird.cmd.aiclear": "Memoria borrada.",
+  "sunbird.cmd.thinking": "Pensando...",
+  "sunbird.cmd.playersonly": "Solo los jugadores pueden hablar con el pájaro.",
+  "sunbird.cmd.thinking_dots": "[El Pájaro Solar está pensando...]",
+  "sunbird.cmd.reload": "Configuración recargada. Backend: %s",
+  "sunbird.cmd.probing": "Probando %s...",
+  "sunbird.cmd.badfield": "Tipo de campo no compatible para %s",
+  "sunbird.cmd.saved": "%s = %s (guardado y aplicado)",
+  "sunbird.cmd.unknownkey": "Clave de configuración desconocida: %s",
+  "sunbird.cmd.failed": "Error: %s",
+  "sunbird.cmd.playersonly.voice": "Solo los jugadores pueden activar la radio del pájaro.",
+  "sunbird.cmd.voice_on": "Voz ACTIVADA",
+  "sunbird.cmd.voice_off": "Voz DESACTIVADA",
+  "sunbird.cmd.tts_disabled": "TTS desactivado - usa /aiconfig set ttsEnabled true",
+  "sunbird.cmd.voicing": "Pronunciando \"%s\" vía %s",
+  "sunbird.cmd.voicetest_failed": "Prueba de voz fallida: %s",
+  "sunbird.cmd.muted": "silenciados: %s",
+  "sunbird.cmd.target_voice_on": "Voz de %s ACTIVADA",
+  "sunbird.cmd.target_voice_off": "Voz de %s DESACTIVADA",
+
+  "sunbird.spook.smell": "De repente hueles a tortitas. No hay tortitas.",
+  "sunbird.spook.sky_thanks": "El cielo te da las gracias.",
+  "sunbird.haunt.light_out": "la luz de este pájaro se está apagando.",
+  "sunbird.haunt.blinks": "el pájaro solar parpadea. la luz vuelve. ...¿perdón?"
+}

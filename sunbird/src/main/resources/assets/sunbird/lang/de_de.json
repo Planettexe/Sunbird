@@ -1,0 +1,33 @@
+{
+  "entity.sunbird.sunbird": "Sonnenvogel",
+  "item.sunbird.sunbird_spawn_egg": "Sonnenvogel-Spawn-Ei",
+  "block.sunbird.sunstone": "Sonnenstein",
+
+  "sunbird.prefix": "[Sonnenvogel] ",
+  "sunbird.whispers": "%s flüstert: ",
+
+  "sunbird.cmd.aiclear": "Gedächtnis gelöscht.",
+  "sunbird.cmd.thinking": "Ich denke nach...",
+  "sunbird.cmd.playersonly": "Nur Spieler können mit dem Vogel sprechen.",
+  "sunbird.cmd.thinking_dots": "[Das Sonnenvogel denkt nach...]",
+  "sunbird.cmd.reload": "Konfiguration neu geladen. Backend: %s",
+  "sunbird.cmd.probing": "Teste %s...",
+  "sunbird.cmd.badfield": "Nicht unterstützter Feldtyp für %s",
+  "sunbird.cmd.saved": "%s = %s (gespeichert & angewendet)",
+  "sunbird.cmd.unknownkey": "Unbekannter Konfigurationsschlüssel: %s",
+  "sunbird.cmd.failed": "Fehlgeschlagen: %s",
+  "sunbird.cmd.playersonly.voice": "Nur Spieler können das Vogelfunk einschalten.",
+  "sunbird.cmd.voice_on": "Stimme EIN",
+  "sunbird.cmd.voice_off": "Stimme AUS",
+  "sunbird.cmd.tts_disabled": "TTS deaktiviert - /aiconfig set ttsEnabled true verwenden",
+  "sunbird.cmd.voicing": "Sprache \"%s\" über %s",
+  "sunbird.cmd.voicetest_failed": "Stimmtest fehlgeschlagen: %s",
+  "sunbird.cmd.muted": "stummgeschaltet: %s",
+  "sunbird.cmd.target_voice_on": "Stimme von %s EIN",
+  "sunbird.cmd.target_voice_off": "Stimme von %s AUS",
+
+  "sunbird.spook.smell": "Du riechst plötzlich Pfannkuchen. Es gibt keine Pfannkuchen.",
+  "sunbird.spook.sky_thanks": "Der Himmel dankt dir.",
+  "sunbird.haunt.light_out": "das Licht in diesem Vogel geht aus.",
+  "sunbird.haunt.blinks": "das Sonnenvogel blinzelt. das Leuchten kommt zurück. ...Entschuldigung?"
+}
