@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * config.json lives in &lt;game&gt;/config/sunbird/config.json on both the dedicated server
@@ -86,6 +88,26 @@ public class SunbirdConfig {
     /** Minimum seconds between pranks. */
     public int prankEverySeconds = 90;
 
+    // ---- Voice (server-side TTS, streamed to modded clients) ----
+    /** Master switch. Off by default so chat-only servers are unaffected. */
+    public boolean ttsEnabled = false;
+    /** "openai" (llama.cpp --tts / kokoro / coqui: POST /audio/speech) or "piper" (POST /tts). */
+    public String ttsEngine = "openai";
+    /** Separate TTS server URL. Leave empty to reuse apiBaseUrl (llama.cpp serves both). */
+    public String ttsBaseUrl = "";
+    /** Voice name ("alaya"/"bojack" for llama.cpp TTS) or speaker id for Piper ("0"). */
+    public String ttsVoice = "alaya";
+    /** Speech rate multiplier sent to the engine (0.5 - 2.0). */
+    public double ttsSpeed = 1.0;
+    /** Volume of the 3D voice audio heard by modded clients (0.0 - 1.0). */
+    public float ttsVolume = 0.8f;
+    /** Max bytes of one audio clip broadcast; bigger clips are skipped (chat still shows). */
+    public int ttsMaxKbPerLine = 512;
+    /** Haunted lines get DEMON warp; pranks get HELLO_KITTY; whispers get FAR_AWAY. */
+    public boolean ttsHorrorWarps = true;
+    /** Per-player mute list managed with /aivoice mute|unmute (persisted in config). */
+    public List<String> ttsMutedPlayers = new ArrayList<>();
+
     public static SunbirdConfig get() {
         return INSTANCE;
     }
@@ -130,6 +152,7 @@ public class SunbirdConfig {
     public static synchronized void reload() {
         load();
         net.sunbird.mod.ai.AiBridge.init(INSTANCE);
+        net.sunbird.mod.tts.TtsBridge.init(INSTANCE);
     }
 
     private static SunbirdConfig defaults() {

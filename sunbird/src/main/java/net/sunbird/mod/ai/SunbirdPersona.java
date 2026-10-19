@@ -1,15 +1,18 @@
 package net.sunbird.mod.ai;
 
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.sunbird.mod.SunbirdConfig;
 import net.sunbird.mod.SunbirdMod;
 import net.sunbird.mod.brain.BehaviorBrain;
 import net.sunbird.mod.net.SunbirdClientNetworking;
+import net.sunbird.mod.tts.VoiceDirector;
 
 /**
  * Delivers model output to players. Works with vanilla clients (chat messages) and
- * upgrades automatically for clients that also run Sunbird (entity chat bubbles + chirps).
+ * upgrades automatically for clients that also run Sunbird (entity chat bubbles +
+ * chirps + server-synthesised TTS voice streamed from the host).
  */
 public final class SunbirdPersona {
     private static long lastGreetingDay = -1;
@@ -39,16 +42,20 @@ public final class SunbirdPersona {
             // Tell modded clients which nearby bird should show a speech bubble / chirp
             SunbirdClientNetworking.broadcastBubble(server, clean, haunted);
         });
+        // Voice is queued on the TTS worker thread - never blocks the tick loop.
+        // Haunted lines come out DEMON-warped; normal lines in the plain hosted voice.
+        VoiceDirector.voiceGlobal(server, clean, haunted && SunbirdConfig.get().ttsHorrorWarps);
     }
 
     /** Whisper a reply privately to one player (used by right-click conversations). */
-    public static void whisper(MinecraftServer server, net.minecraft.server.network.ServerPlayerEntity player, String text) {
+    public static void whisper(MinecraftServer server, ServerPlayerEntity player, String text) {
         if (text == null || text.isBlank() || player == null) return;
         String clean = sanitize(text);
         server.execute(() -> player.sendMessage(
                 Text.literal(name() + " whispers: ").formatted(net.minecraft.util.Formatting.GOLD)
                         .append(Text.literal(clean).formatted(net.minecraft.util.Formatting.ITALIC)),
                 false));
+        VoiceDirector.voiceWhisper(player, clean);
     }
 
     /** Rotate a fresh "morning" greeting prompt each in-game day so the bird feels alive. */

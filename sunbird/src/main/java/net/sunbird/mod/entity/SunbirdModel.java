@@ -19,10 +19,20 @@ public class SunbirdModel extends SinglePartEntityModel<MobEntity> {
         this.rootPart = getTexturedModelData().createModel();
     }
 
+    /** 0..1 while the bird is voicing a TTS clip; drives the talking squash-stretch. */
+    public float talk = 0f;
+
     @Override
     public void setAngles(MobEntity entity, float movementTickDelta, float animationProgress,
                           float headYaw, float headPitch, float socialInteractionsProgress) {
         // The ball does not animate its parts - the renderer bobs and turns the face instead.
+        // ...EXCEPT when it's talking: gentle squash-and-stretch pulse so you can see
+        // WHO is speaking even with the chat log closed. Purely visual, zero packets.
+        if (talk > 0.001f) {
+            float t = System.currentTimeMillis() * 0.02f;
+            float pulse = (float) Math.abs(Math.sin(t * 1.7)) * talk;
+            rootPart.scale(1f + pulse * 0.05f, 1f - pulse * 0.04f, 1f + pulse * 0.05f);
+        }
     }
 
     public static TexturedModelData getTexturedModelData() {

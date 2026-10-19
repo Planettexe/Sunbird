@@ -18,6 +18,7 @@ import net.sunbird.mod.brain.BehaviorBrain;
  * /aiconfig show|set|reload|test - manage the backend without editing files blind
  * /aiclear             - wipe conversation memory
  * /aiwake              - force an autonomous thought right now
+ * /aivoice on|off|mute|unmute|test - control the streamed TTS voice
  */
 public final class SunbirdCommands {
 
@@ -41,6 +42,23 @@ public final class SunbirdCommands {
                     ctx.getSource().sendFeedback(Text.literal("[Sunbird] Thinking...").formatted(Formatting.YELLOW), false);
                     return 1;
                 }))
+            .register(CommandManager.literal("aivoice")
+                .requires(src -> src.hasPermissionLevel(0))
+                .then(CommandManager.literal("on").executes(ctx -> voicePref(ctx, true)))
+                .then(CommandManager.literal("off").executes(ctx -> voicePref(ctx, false)))
+                .then(CommandManager.literal("status").executes(SunbirdCommands::voiceStatus))
+                .then(CommandManager.literal("test")
+                        .requires(src -> src.hasPermissionLevel(2))
+                        .then(CommandManager.argument("text", StringArgumentType.greedyString())
+                                .executes(SunbirdCommands::voiceTest)))
+                .then(CommandManager.literal("mute")
+                        .requires(src -> src.hasPermissionLevel(2))
+                        .then(CommandManager.argument("player", StringArgumentType.word())
+                                .executes(ctx -> voiceMute(ctx, true))))
+                .then(CommandManager.literal("unmute")
+                        .requires(src -> src.hasPermissionLevel(2))
+                        .then(CommandManager.argument("player", StringArgumentType.word())
+                                .executes(ctx -> voiceMute(ctx, false)))))
             .register(CommandManager.literal("aiconfig")
                 .requires(src -> src.hasPermissionLevel(2))
                 .then(CommandManager.literal("show").executes(SunbirdCommands::show))
@@ -119,5 +137,93 @@ public final class SunbirdCommands {
             ctx.getSource().sendError(Text.literal("Failed: " + e.getMessage()));
             return 0;
         }
+    }
+
+    // ---------------- voice (/aivoice) ----------------
+
+    /**
+     * on/off flips the SERVER-side gate for this player. We keep it server-authoritative
+     * so no C2S channel is needed and vanilla clients simply get nothing extra ever.
+     */
+    private static int voicePref(CommandContext<ServerCommandSource> ctx, boolean on) {
+        ServerPlayerEntity player = ctx.getSource().getEntity();
+        if (player == null) {
+            ctx.getSource().sendError(Text.literal("Only players can toggle their bird radio."));
+            return 0;
+        }
+        SunbirdConfig cfg = SunbirdConfig.get();
+        String name = player.getName().getString();
+        boolean muted = !on;
+        if (muted && !cfg.ttsMutedPlayers.contains(name)) cfg.ttsMutedPlayers.add(name);
+        if (!muted) cfg.ttsMutedPlayers.remove(name);
+        SunbirdConfig.save();
+        net.sunbird.mod.net.VoicePrefs.set(player.getUuid(), on);
+        ctx.getSource().sendFeedback(Text.literal("[Sunbird] Voice " + (on ? "ON" : "OFF")
+                + " for you.").formatted(on ? Formatting.GREEN : Formatting.GRAY), false);
+        return 1;
+    }
+
+    private static int voiceStatus(CommandContext<ServerCommandSource> ctx) {
+        var source = ctx.getSource();
+        source.sendFeedback(Text.literal("[Sunbird] TTS: "
+                + net.sunbird.mod.tts.TtsBridge.describe()).formatted(Formatting.YELLOW), false);
+        SunbirdConfig cfg = SunbirdConfig.get();
+        source.sendFeedback(Text.literal("engine=" + cfg.ttsEngine + " voice=" + cfg.ttsVoice
+                + " speed=" + cfg.ttsSpeed + " volume=" + cfg.ttsVolume
+                + " warps=" + cfg.ttsHorrorWarps).formatted(Formatting.GRAY), false);
+        if (!cfg.ttsMutedPlayers.isEmpty()) {
+            source.sendFeedback(Text.literal("muted: " + String.join(", ", cfg.ttsMutedPlayers))
+                    .formatted(Formatting.GRAY), false);
+        }
+        return 1;
+    }
+
+    /** Synthesise a test clip right now and send it ONLY to the sender at their head. */
+    private static int voiceTest(CommandContext<ServerCommandSource> ctx) {
+        ServerPlayerEntity player = ctx.getSource().getEntity();
+        if (player == null) {
+            ctx.getSource().sendError(Text.literal("Only players can hear the test."));
+            return 0;
+        }
+        if (!net.sunbird.mod.tts.TtsBridge.enabled()) {
+            ctx.getSource().sendError(Text.literal("TTS is disabled - set ttsEnabled true via /aiconfig set ttsEnabled true"));
+            return 0;
+        }
+        String text = StringArgumentType.getString(ctx, "text");
+        ctx.getSource().sendFeedback(Text.literal("[Sunbird] Voicing \"" + text + "\" via "
+                + net.sunbird.mod.tts.TtsBridge.describe() + "...").formatted(Formatting.GRAY), false);
+        final int[] anchor = {(int) (player.getX() * 8), (int) ((player.getY() + 1.5) * 8), (int) (player.getZ() * 8)};
+        net.sunbird.mod.tts.TtsBridge.synthesizeNow(text).whenComplete((wav, err) -> {
+            if (err != null || wav == null || wav.length == 0) {
+                player.getServer().execute(() -> player.sendMessage(
+                        Text.literal("[Sunbird] Voice test failed: "
+                                + (err != null ? err.getMessage() : "empty audio")).formatted(Formatting.RED), false));
+                return;
+            }
+            player.getServer().execute(() -> {
+                boolean ok = net.sunbird.mod.net.SunbirdClientNetworking.sendVoiceTo(
+                        player, -1, anchor[0], anchor[1], anchor[2],
+                        SunbirdConfig.get().ttsVolume, wav);
+                player.sendMessage(Text.literal(ok
+                        ? "[Sunbird] Voice test delivered (" + wav.length / 1024 + " KB)."
+                        : "[Sunbird] Your client can't receive audio - chat-only mode.").formatted(
+                        ok ? Formatting.GREEN : Formatting.GRAY), false);
+            });
+        });
+        return 1;
+    }
+
+    private static int voiceMute(CommandContext<ServerCommandSource> ctx, boolean mute) {
+        String target = StringArgumentType.getString(ctx, "player");
+        SunbirdConfig cfg = SunbirdConfig.get();
+        if (mute) {
+            if (!cfg.ttsMutedPlayers.contains(target)) cfg.ttsMutedPlayers.add(target);
+        } else {
+            cfg.ttsMutedPlayers.remove(target);
+        }
+        SunbirdConfig.save();
+        ctx.getSource().sendFeedback(Text.literal("[Sunbird] " + target + " voice "
+                + (mute ? "muted" : "unmuted") + ".").formatted(Formatting.GOLD), true);
+        return 1;
     }
 }

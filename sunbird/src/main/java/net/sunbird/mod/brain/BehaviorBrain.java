@@ -52,6 +52,7 @@ public final class BehaviorBrain {
             t.setDaemon(true);
             return t;
         });
+        net.sunbird.mod.tts.TtsBridge.init(SunbirdConfig.get());
         SunbirdConfig cfg = SunbirdConfig.get();
         if (cfg.autonomousChatter) {
             scheduler.scheduleWithFixedDelay(BehaviorBrain::maybeAutonomousThought,

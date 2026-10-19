@@ -16,11 +16,12 @@ import net.sunbird.mod.SunbirdMod;
 public final class SunbirdClientNetworking {
     public static final Identifier BUBBLE_S2C = SunbirdMod.id("s2c_bubble");
     public static final Identifier CHIRP_S2C = SunbirdMod.id("s2c_chirp");
+    public static final Identifier VOICE_S2C = SunbirdMod.id("s2c_voice");
 
     private SunbirdClientNetworking() {}
 
     public static void registerServerPayloadHandlers() {
-        // S2C only - no C2S handlers needed since all AI runs on the server.
+        // All Sunbird traffic is S2C; voice toggling is done server-side via /aivoice.
         // This keeps the mod safe for vanilla clients joining a modded server.
     }
 
@@ -34,6 +35,48 @@ public final class SunbirdClientNetworking {
 
     public static void broadcastChirp(MinecraftServer server) {
         sendToAll(server, CHIRP_S2C, buf -> {});
+    }
+
+    /**
+     * Stream a synthesised WAV clip from the SERVER to every modded client that
+     * opted in. Vanilla clients never receive this (canSend check) and are none
+     * the wiser. Payload: entity id (-1 = free-floating), x*8/y*8/z*8, volume, wav.
+     */
+    public static void broadcastVoice(MinecraftServer server, int entityId,
+                                      int x8, int y8, int z8,
+                                      float volume, byte[] wav) {
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            if (!sendVoiceTo(player, entityId, x8, y8, z8, volume, wav)) {
+                // Player's client lacks the mod - chat-only mode for them. Perfectly fine.
+            }
+        }
+    }
+
+    /** Send one voice clip to exactly one player (private whispers). */
+    public static boolean sendVoiceTo(ServerPlayerEntity player, int[] anchor,
+                                      float volume, byte[] wav) {
+        return sendVoiceTo(player, anchor[0], anchor[1], anchor[2], anchor[3], volume, wav);
+    }
+
+    public static boolean sendVoiceTo(ServerPlayerEntity player, int entityId,
+                                      int x8, int y8, int z8, float volume, byte[] wav) {
+        try {
+            if (!VoicePrefs.wants(player.getUuid())) return false;
+            if (net.sunbird.mod.SunbirdConfig.get().ttsMutedPlayers
+                    .contains(player.getName().getString())) return false;
+            if (!ServerPlayNetworking.canSend(player, VOICE_S2C)) return false;
+            PacketByteBuf buf = PacketByteBufs.create();
+            buf.writeInt(entityId);
+            buf.writeInt(x8);
+            buf.writeInt(y8);
+            buf.writeInt(z8);
+            buf.writeFloat(volume);
+            buf.writeByteArray(wav);
+            ServerPlayNetworking.send(player, VOICE_S2C, buf);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private static void sendToAll(MinecraftServer server, Identifier channel,
