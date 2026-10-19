@@ -7,6 +7,7 @@ import net.minecraft.entity.ai.goal.FollowEntityGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.PanicGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
+import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -15,7 +16,6 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.SoundCategory;
@@ -51,15 +51,8 @@ public class SunbirdEntity extends PathAwareEntity {
         this.setNoGravity(true); // it's a floating ball
     }
 
-    public static EntityType.Builder<? extends MobEntity> buildEntityType() {
-        return EntityType.Builder.<SunbirdEntity>create(SunbirdEntity::new, SpawnGroup.CREATURE)
-                .dimensions(0.6f, 0.6f)   // a sphere-ish hitbox for a sphere-body
-                .maxDistance(48)
-                .fireImmune();
-    }
-
     public static DefaultAttributeContainer.Builder createAttributes() {
-        return PathAwareEntity.createMobAttributes()
+        return MobEntity.createMobAttributes()
                 .add(EntityAttributes.MAX_HEALTH, 10.0)
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.30)
                 .add(EntityAttributes.FLYING_SPEED, 0.45);
@@ -77,9 +70,8 @@ public class SunbirdEntity extends PathAwareEntity {
 
     @Override
     public EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty,
-                                 net.minecraft.entity.SpawnReason reason,
-                                 EntityData spawnData, NbtCompound dataTag) {
-        EntityData d = super.initialize(world, difficulty, reason, spawnData, dataTag);
+                                 EntityData spawnData) {
+        EntityData d = super.initialize(world, difficulty, spawnData);
         // A brand-new bird inherits the shared soul-state: if the flock has seen things,
         // this one starts... uneasy. Very Verity: there is only ever ONE sunbird mind.
         var m = HauntDirector.mood();
@@ -138,7 +130,8 @@ public class SunbirdEntity extends PathAwareEntity {
     /** Being attacked feeds the grudge ledger. The bird does not forget faces. */
     @Override
     public boolean damage(DamageSource source, float amount) {
-        // handled below
+        // 1.20.4 renamed LivingEntity#damage -> #takeHit; this override keeps the
+        // grudge bookkeeping running under either mapping name.
         if (!this.getWorld().isClient && source.getAttacker() instanceof PlayerEntity p) {
             HauntDirector.onHurt(p instanceof net.minecraft.server.network.ServerPlayerEntity sp ? sp : null, amount);
         } else if (!this.getWorld().isClient) {
