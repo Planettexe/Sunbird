@@ -25,8 +25,11 @@ public final class SunbirdClientNetworking {
     }
 
     /** Broadcast "the bird just spoke" so modded clients can animate nearby birds. */
-    public static void broadcastBubble(MinecraftServer server, String text) {
-        sendToAll(server, BUBBLE_S2C, buf -> buf.writeString(text));
+    public static void broadcastBubble(MinecraftServer server, String text, boolean haunted) {
+        sendToAll(server, BUBBLE_S2C, buf -> {
+            buf.writeString(text);
+            buf.writeBoolean(haunted);
+        });
     }
 
     public static void broadcastChirp(MinecraftServer server) {

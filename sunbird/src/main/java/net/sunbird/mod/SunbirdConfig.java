@@ -68,6 +68,24 @@ public class SunbirdConfig {
     /** Natural spawn of baby sunbirds near player settlements. */
     public boolean naturalSpawning = true;
 
+    // ---- Horror side (the Verity "it gets weird at 3AM" spectrum) ----
+    /** Master switch for everything spooky: dread build-up, whispers, haunts. */
+    public boolean horrorEnabled = true;
+    /** Dread (0..1) needed before a midnight haunt episode can start. */
+    public float hauntDreadThreshold = 0.6f;
+    /** Minimum seconds between ambient spook events (whispers/thunder). */
+    public int creepyEverySeconds = 45;
+    /** When haunted, the bird dims its glow and its face goes wrong. Purely cosmetic sync. */
+    public boolean hauntedVisuals = true;
+
+    // ---- Funny side (petty chaos) ----
+    /** Master switch for pranks when the bird is bored. */
+    public boolean comedyEnabled = true;
+    /** Mischief (0..1) needed before the bird starts pulling stunts. */
+    public float prankMischiefThreshold = 0.7f;
+    /** Minimum seconds between pranks. */
+    public int prankEverySeconds = 90;
+
     public static SunbirdConfig get() {
         return INSTANCE;
     }

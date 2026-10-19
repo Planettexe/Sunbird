@@ -43,6 +43,14 @@ public final class ChatHistory {
         List<AiBridge.Turn> turns = new ArrayList<>();
         String sys = cfg.systemPrompt
                 + "\nYou are talking to players on a Minecraft server. Recent events:";
+        // Mood + grudges: the bird's emotional continuity lives here (works with small local models)
+        if (cfg.horrorEnabled || cfg.comedyEnabled) {
+            sys += "\nYour current mood: " + net.sunbird.mod.mood.HauntDirector.moodDigest() + ".";
+            String digest = net.sunbird.mod.mood.MemoryLedger.promptDigest();
+            if (!digest.isBlank()) {
+                sys += "\nThings you remember and feel about:\n" + digest;
+            }
+        }
         if (extraInstruction != null && !extraInstruction.isBlank()) {
             sys += "\n" + extraInstruction;
         }

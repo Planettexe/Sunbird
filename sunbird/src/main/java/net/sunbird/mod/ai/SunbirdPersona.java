@@ -22,15 +22,22 @@ public final class SunbirdPersona {
 
     /** Say something to the whole server as the bird. Thread-safe: schedules onto main thread. */
     public static void say(MinecraftServer server, String text) {
+        say(server, text, false);
+    }
+
+    /** Haunted variant: dark formatting + distorted pitch so modded clients hear it too. */
+    public static void say(MinecraftServer server, String text, boolean haunted) {
         if (text == null || text.isBlank()) return;
         String clean = sanitize(text);
         ChatHistory.add(name(), clean);
         server.execute(() -> {
-            Text msg = Text.literal("[" + name() + "] ").formatted(net.minecraft.util.Formatting.GOLD)
-                    .append(Text.literal(clean).formatted(net.minecraft.util.Formatting.YELLOW));
+            Text msg = Text.literal("[" + name() + "] ")
+                    .formatted(haunted ? net.minecraft.util.Formatting.DARK_PURPLE : net.minecraft.util.Formatting.GOLD)
+                    .append(Text.literal(clean).formatted(
+                            haunted ? net.minecraft.util.Formatting.ITALIC : net.minecraft.util.Formatting.YELLOW));
             server.getPlayerManager().broadcast(msg, false);
             // Tell modded clients which nearby bird should show a speech bubble / chirp
-            SunbirdClientNetworking.broadcastBubble(server, clean);
+            SunbirdClientNetworking.broadcastBubble(server, clean, haunted);
         });
     }
 
