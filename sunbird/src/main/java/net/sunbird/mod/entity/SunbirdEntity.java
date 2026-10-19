@@ -5,7 +5,10 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.FollowEntityGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
+import net.minecraft.entity.ai.goal.PanicGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
+import net.minecraft.entity.mob.PathAwareEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
@@ -35,27 +38,28 @@ import net.sunbird.mod.mood.HauntDirector;
  * Mood (dread/haunted) is synced via DataTracker so ALL clients - including other
  * mods' shaders - can render the wrongness when the bird goes dark.
  */
-public class SunbirdEntity extends MobEntity {
+public class SunbirdEntity extends PathAwareEntity {
 
     private static final TrackedData<Float> DREAD =
             DataTracker.registerData(SunbirdEntity.class, TrackedDataHandlerRegistry.FLOAT);
     private static final TrackedData<Boolean> HAUNTED =
             DataTracker.registerData(SunbirdEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
-    public SunbirdEntity(EntityType<? extends MobEntity> type, World world) {
+    public SunbirdEntity(EntityType<? extends PathAwareEntity> type, World world) {
         super(type, world);
         this.experienceValue = 0;
+        this.setNoGravity(true); // it's a floating ball
     }
 
-    public static EntityType.Builder<MobEntity> buildEntityType() {
-        return EntityType.Builder.create(SunbirdEntity::new, SpawnGroup.CREATURE)
+    public static EntityType.Builder<? extends MobEntity> buildEntityType() {
+        return EntityType.Builder.<SunbirdEntity>create(SunbirdEntity::new, SpawnGroup.CREATURE)
                 .dimensions(0.6f, 0.6f)   // a sphere-ish hitbox for a sphere-body
                 .maxDistance(48)
                 .fireImmune();
     }
 
     public static DefaultAttributeContainer.Builder createAttributes() {
-        return MobEntity.createMobAttributes()
+        return PathAwareEntity.createMobAttributes()
                 .add(EntityAttributes.MAX_HEALTH, 10.0)
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.30)
                 .add(EntityAttributes.FLYING_SPEED, 0.45);
@@ -87,6 +91,7 @@ public class SunbirdEntity extends MobEntity {
     @Override
     protected void initGoals() {
         // Gentle wander + follow; all "thinking" happens server-side in BehaviorBrain
+        this.goalSelector.add(0, new PanicGoal(this, 1.2));
         this.goalSelector.add(1, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
         this.goalSelector.add(2, new FollowEntityGoal<>(this, PlayerEntity.class, 8.0f, 1.15, 16.0f));
         this.goalSelector.add(3, new WanderAroundFarGoal(this, 0.9));
@@ -133,6 +138,7 @@ public class SunbirdEntity extends MobEntity {
     /** Being attacked feeds the grudge ledger. The bird does not forget faces. */
     @Override
     public boolean damage(DamageSource source, float amount) {
+        // handled below
         if (!this.getWorld().isClient && source.getAttacker() instanceof PlayerEntity p) {
             HauntDirector.onHurt(p instanceof net.minecraft.server.network.ServerPlayerEntity sp ? sp : null, amount);
         } else if (!this.getWorld().isClient) {

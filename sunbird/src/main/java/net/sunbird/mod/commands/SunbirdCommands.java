@@ -72,7 +72,7 @@ public final class SunbirdCommands {
                 .then(CommandManager.literal("set")
                         .then(CommandManager.argument("key", StringArgumentType.word())
                                 .then(CommandManager.argument("value", StringArgumentType.greedyString())
-                                        .executes(SunbirdCommands::set))))));
+                                        .executes(SunbirdCommands::set)))));
     }
 
     private static int ask(CommandContext<ServerCommandSource> ctx) {
